@@ -31,42 +31,90 @@ end
 
 ---@param index integer
 ---@return table
-local function GetAdyacentIndexes(index)
+function GetAdyacentIndexes(index)
     local adyacentIndexes = {}
 
     adyacentIndexes.UP = index - 13
-    adyacentIndexes.UP_RIGHT = adyacentIndexes.UP + 1
-    adyacentIndexes.UP_LEFT = adyacentIndexes.UP - 1
-
     adyacentIndexes.D_UP = index - 26
-    adyacentIndexes.D_UP_LEFT = adyacentIndexes.D_UP - 1
 
     adyacentIndexes.DOWN = index + 13
-    adyacentIndexes.DOWN_RIGHT = adyacentIndexes.DOWN + 1
-    adyacentIndexes.DOWN_LEFT = adyacentIndexes.DOWN - 1
-
     adyacentIndexes.D_DOWN = index + 26
-    adyacentIndexes.D_DOWN_RIGHT = adyacentIndexes.D_DOWN + 1
 
-    --A room is adyacent to the left "wall" if its grid index is divisible by 13
-    local directlyAdyacentLeft = index % 13 == 0
-    adyacentIndexes.LEFT = directlyAdyacentLeft and index - 1 or -1
-    adyacentIndexes.LEFT_DOWN = directlyAdyacentLeft and index + 12 or -1
+    --Is directly adyacent to the left
+    if index % 13 == 0 then
+        adyacentIndexes.LEFT = -1
 
-    --A room is indirectly adyacent to the left "wall" if the remainder of its grid index and 13 is 1
-    local indirectlyAdyacentLeft = index % 13 == 1
-    adyacentIndexes.D_LEFT = indirectlyAdyacentLeft and index - 1 or -1
-    adyacentIndexes.D_LEFT_DOWN = indirectlyAdyacentLeft and index + 12 or -1
+        adyacentIndexes.UP_LEFT = -1
+        adyacentIndexes.D_UP_LEFT = -1
 
-    --A room is directly adyacent to the right if the remainder of its grid index and 13 is 12
-    local directlyAdyacentRight = index % 13 == 12
-    adyacentIndexes.RIGHT = directlyAdyacentRight and index + 1 or -1
-    adyacentIndexes.RIGHT_DOWN = directlyAdyacentRight and index + 14 or -1
+        adyacentIndexes.DOWN = -1
+        adyacentIndexes.D_DOWN = -1
+    else
+        adyacentIndexes.LEFT = index - 1
 
-    --A room is indirectly adyacent to the right if the remainder of its grid index and 13 is 11
-    local indirectlyAdyacentRight = index % 13 == 11
-    adyacentIndexes.D_RIGHT = directlyAdyacentRight and index + 2 or -1
-    adyacentIndexes.D_RIGHT_DOWN = directlyAdyacentRight and index + 15 or -1
+        adyacentIndexes.UP_LEFT = adyacentIndexes.UP - 1
+        adyacentIndexes.D_UP_LEFT = adyacentIndexes.D_UP - 1
+
+        adyacentIndexes.DOWN_LEFT = adyacentIndexes.DOWN - 1
+        adyacentIndexes.D_DOWN_LEFT = adyacentIndexes.D_DOWN - 1
+    end
+
+    --Is indirectly adyacent to the left
+    if index % 13 == 0 or index % 13 == 1 then
+        adyacentIndexes.D_LEFT = -1
+
+        adyacentIndexes.UP_D_LEFT = -1
+        adyacentIndexes.D_UP_D_LEFT = -1
+
+        adyacentIndexes.DOWN_D_LEFT = -1
+        adyacentIndexes.D_DOWN_D_LEFT = -1
+    else
+        adyacentIndexes.D_LEFT = index - 2
+
+        adyacentIndexes.UP_D_LEFT = adyacentIndexes.UP - 2
+        adyacentIndexes.D_UP_D_LEFT = adyacentIndexes.D_UP - 2
+
+        adyacentIndexes.DOWN_D_LEFT = adyacentIndexes.DOWN - 2
+        adyacentIndexes.D_DOWN_D_LEFT = adyacentIndexes.D_DOWN - 2
+    end
+
+    --Is directly adyacent to the right
+    if index % 13 == 12 then
+        adyacentIndexes.RIGHT = -1
+
+        adyacentIndexes.UP_RIGHT = -1
+        adyacentIndexes.D_UP_RIGHT = -1
+
+        adyacentIndexes.DOWN = -1
+        adyacentIndexes.D_DOWN = -1
+    else
+        adyacentIndexes.RIGHT = index + 1
+
+        adyacentIndexes.UP_RIGHT = adyacentIndexes.UP + 1
+        adyacentIndexes.D_UP_RIGHT = adyacentIndexes.D_UP + 1
+
+        adyacentIndexes.DOWN_RIGHT = adyacentIndexes.DOWN + 1
+        adyacentIndexes.D_DOWN_RIGHT = adyacentIndexes.D_DOWN + 1
+    end
+
+    --Is indirectly adyacent to the right
+    if index % 13 == 12 or index % 13 == 11 then
+        adyacentIndexes.D_RIGHT = -1
+
+        adyacentIndexes.UP_D_RIGHT = -1
+        adyacentIndexes.D_UP_D_RIGHT = -1
+
+        adyacentIndexes.DOWN_D_RIGHT = -1
+        adyacentIndexes.D_DOWN_D_RIGHT = -1
+    else
+        adyacentIndexes.D_RIGHT = index + 2
+
+        adyacentIndexes.UP_D_RIGHT = adyacentIndexes.UP + 2
+        adyacentIndexes.D_UP_D_RIGHT = adyacentIndexes.D_UP + 2
+
+        adyacentIndexes.DOWN_D_RIGHT = adyacentIndexes.DOWN + 2
+        adyacentIndexes.D_DOWN_D_RIGHT = adyacentIndexes.D_DOWN + 2
+    end
 
     return adyacentIndexes
 end
@@ -139,12 +187,14 @@ end
 
 
 ---@param index integer
----@return boolean
-local function IsRoomAccessible(index)
+function IsAccessibleIndexButCantBeRedRoom(index)
     local level = game:GetLevel()
     local rooms = level:GetRooms()
 
     local adyacentIndexes = GetAdyacentIndexes(index)
+
+    local isNotAccessibleFromAtLeastOne = false
+    local isAccessbileFromAtLeastOne = false
 
     --Check for doors
     for i = 0, rooms.Size - 1, 1 do
@@ -154,242 +204,459 @@ local function IsRoomAccessible(index)
 
         --Normal rooms
         if roomData.Shape == RoomShape.ROOMSHAPE_1x1 or roomData.Shape == RoomShape.ROOMSHAPE_IH or roomData.Shape == RoomShape.ROOMSHAPE_IV then
-            if room.GridIndex == adyacentIndexes.UP and not HasFlag(doors, DoorSlot.DOWN0) then
-                return false
+            if room.GridIndex == adyacentIndexes.UP then
+                if HasFlag(doors, 1 << DoorSlot.DOWN0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.LEFT and not HasFlag(doors, DoorSlot.RIGHT0) then
-                return false
+            if room.GridIndex == adyacentIndexes.LEFT then
+                if HasFlag(doors, 1 << DoorSlot.RIGHT0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.RIGHT and not HasFlag(doors , DoorSlot.LEFT0) then
-                return false
+            if room.GridIndex == adyacentIndexes.RIGHT then
+                if HasFlag(doors, 1 << DoorSlot.LEFT0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.DOWN and not HasFlag(doors, DoorSlot.UP0) then
-                return false
+            if room.GridIndex == adyacentIndexes.DOWN then
+                if HasFlag(doors, 1 << DoorSlot.UP0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
         end
 
         --1x2 rooms
         if roomData.Shape == RoomShape.ROOMSHAPE_1x2 or roomData.Shape == RoomShape.ROOMSHAPE_IIV then
-            if room.GridIndex == adyacentIndexes.D_UP and not HasFlag(doors, DoorSlot.DOWN0) then
-                return false
+            if room.GridIndex == adyacentIndexes.D_UP then
+                if HasFlag(doors, 1 << DoorSlot.DOWN0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.LEFT and not HasFlag(doors, DoorSlot.RIGHT0) then
-                return false
+            if room.GridIndex == adyacentIndexes.LEFT then
+                if HasFlag(doors, 1 << DoorSlot.RIGHT0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.RIGHT and not HasFlag(doors, DoorSlot.LEFT0) then
-                return false
+            if room.GridIndex == adyacentIndexes.RIGHT then
+                if HasFlag(doors, 1 << DoorSlot.LEFT0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.UP_LEFT and not HasFlag(doors, DoorSlot.RIGHT1) then
-                return false
+            if room.GridIndex == adyacentIndexes.UP_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.RIGHT1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.UP_RIGHT and not HasFlag(doors, DoorSlot.LEFT1) then
-                return false
+            if room.GridIndex == adyacentIndexes.UP_RIGHT then
+                if HasFlag(doors, 1 << DoorSlot.LEFT1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.DOWN and not HasFlag(doors, DoorSlot.UP0) then
-                return false
+            if room.GridIndex == adyacentIndexes.DOWN then
+                if HasFlag(doors, 1 << DoorSlot.UP0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
         end
 
         --2x1 rooms
         if roomData.Shape == RoomShape.ROOMSHAPE_2x1 or roomData.Shape == RoomShape.ROOMSHAPE_IIH then
-            if room.GridIndex == adyacentIndexes.UP and not HasFlag(doors, DoorSlot.DOWN0) then
-                return false
+            if room.GridIndex == adyacentIndexes.UP then
+                if HasFlag(doors, 1 << DoorSlot.DOWN0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.UP_LEFT and not HasFlag(doors, DoorSlot.DOWN1) then
-                return false
+            if room.GridIndex == adyacentIndexes.UP_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.DOWN1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.DOWN and not HasFlag(doors, DoorSlot.UP0) then
-                return false
+            if room.GridIndex == adyacentIndexes.DOWN then
+                if HasFlag(doors, 1 << DoorSlot.UP0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.DOWN_LEFT and not HasFlag(doors, DoorSlot.UP1) then
-                return false
+            if room.GridIndex == adyacentIndexes.DOWN_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.UP1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.D_LEFT and not HasFlag(doors, DoorSlot.RIGHT0) then
-                return false
+            if room.GridIndex == adyacentIndexes.D_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.RIGHT0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.RIGHT and not HasFlag(doors, DoorSlot.LEFT0) then
-                return false
+            if room.GridIndex == adyacentIndexes.RIGHT then
+                if HasFlag(doors, 1 << DoorSlot.LEFT0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
         end
 
         --2x2 rooms
         if roomData.Shape == RoomShape.ROOMSHAPE_2x2 then
-            if room.GridIndex == adyacentIndexes.D_UP_LEFT and not HasFlag(doors, DoorSlot.DOWN1) then
-                return false
+            if room.GridIndex == adyacentIndexes.D_UP_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.DOWN1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.D_UP and not HasFlag(doors, DoorSlot.DOWN0) then
-                return false
+            if room.GridIndex == adyacentIndexes.D_UP then
+                if HasFlag(doors, 1 << DoorSlot.DOWN0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.D_LEFT and not HasFlag(doors, DoorSlot.RIGHT0) then
-                return false
+            if room.GridIndex == adyacentIndexes.D_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.RIGHT0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.D_LEFT_UP and not HasFlag(doors, DoorSlot.RIGHT1) then
-                return false
+            if room.GridIndex == adyacentIndexes.UP_D_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.RIGHT1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.RIGHT and not HasFlag(doors, DoorSlot.LEFT0) then
-                return false
+            if room.GridIndex == adyacentIndexes.RIGHT then
+                if HasFlag(doors, 1 << DoorSlot.LEFT0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.UP_RIGHT and not HasFlag(doors, DoorSlot.LEFT1) then
-                return false
+            if room.GridIndex == adyacentIndexes.UP_RIGHT then
+                if HasFlag(doors, 1 << DoorSlot.LEFT1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.DOWN and not HasFlag(doors, DoorSlot.UP0) then
-                return false
+            if room.GridIndex == adyacentIndexes.DOWN then
+                if HasFlag(doors, 1 << DoorSlot.UP0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.DOWN_LEFT and not HasFlag(doors, DoorSlot.UP1) then
-                return false
+            if room.GridIndex == adyacentIndexes.DOWN_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.UP1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
         end
 
         --LTL rooms
         if roomData.Shape == RoomShape.ROOMSHAPE_LTL then
-            if room.GridIndex == index and not HasFlag(doors, DoorSlot.UP0 | DoorSlot.LEFT0) then
-                return false
+            if room.GridIndex == index then
+                if HasFlag(doors, 1 << DoorSlot.UP0 | 1 << DoorSlot.LEFT0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.DOWN_LEFT and not HasFlag(doors, DoorSlot.UP1) then
-                return false
+            if room.GridIndex == adyacentIndexes.DOWN_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.UP1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.D_LEFT and not HasFlag(doors, DoorSlot.RIGHT0) then
-                return false
+            if room.GridIndex == adyacentIndexes.D_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.RIGHT0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.D_LEFT_UP and not HasFlag(doors, DoorSlot.RIGHT1) then
-                return false
+            if room.GridIndex == adyacentIndexes.UP_D_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.RIGHT1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.UP_RIGHT and not HasFlag(doors, DoorSlot.LEFT1) then
-                return false
+            if room.GridIndex == adyacentIndexes.UP_RIGHT then
+                if HasFlag(doors, 1 << DoorSlot.LEFT1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.D_UP and not HasFlag(doors, DoorSlot.DOWN0) then
-                return false
+            if room.GridIndex == adyacentIndexes.D_UP then
+                if HasFlag(doors, 1 << DoorSlot.DOWN0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.D_UP_LEFT and not HasFlag(doors, DoorSlot.DOWN1) then
-                return false
+            if room.GridIndex == adyacentIndexes.D_UP_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.DOWN1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
         end
 
         --LTR rooms
         if roomData.Shape == RoomShape.ROOMSHAPE_LTR then
-            if room.GridIndex == adyacentIndexes.DOWN and not HasFlag(doors, DoorSlot.UP0) then
-                return false
+            if room.GridIndex == adyacentIndexes.LEFT then
+                if HasFlag(doors, 1 << DoorSlot.RIGHT0 | 1 << DoorSlot.UP1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.RIGHT and not HasFlag(doors, DoorSlot.LEFT0) then
-                return false
+            if room.GridIndex == adyacentIndexes.DOWN then
+                if HasFlag(doors, 1 << DoorSlot.UP0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.UP_RIGHT and not HasFlag(doors, DoorSlot.LEFT1) then
-                return false
+            if room.GridIndex == adyacentIndexes.RIGHT then
+                if HasFlag(doors, 1 << DoorSlot.LEFT0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.LEFT and not HasFlag(doors, DoorSlot.RIGHT0 | DoorSlot.UP1) then
-                return false
+            if room.GridIndex == adyacentIndexes.UP_RIGHT then
+                if HasFlag(doors, 1 << DoorSlot.LEFT1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.D_LEFT_UP and not HasFlag(doors, DoorSlot.RIGHT1) then
-                return false
+            if room.GridIndex == adyacentIndexes.UP_D_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.RIGHT1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.D_UP and not HasFlag(doors, DoorSlot.DOWN0) then
-                return false
+            if room.GridIndex == adyacentIndexes.D_UP then
+                if HasFlag(doors, 1 << DoorSlot.DOWN0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.D_UP_LEFT and not HasFlag(doors, DoorSlot.DOWN1) then
-                return false
+            if room.GridIndex == adyacentIndexes.D_UP_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.DOWN1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
         end
 
         --LBL rooms
         if roomData.Shape == RoomShape.ROOMSHAPE_LBL then
-            if room.GridIndex == adyacentIndexes.UP and not HasFlag(doors, DoorSlot.DOWN0 | DoorSlot.LEFT1) then
-                return false
+            if room.GridIndex == adyacentIndexes.UP then
+                if HasFlag(doors, 1 << DoorSlot.DOWN0 | 1 << DoorSlot.LEFT1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.RIGHT and not HasFlag(doors, DoorSlot.LEFT0) then
-                return false
+            if room.GridIndex == adyacentIndexes.RIGHT then
+                if HasFlag(doors, 1 << DoorSlot.LEFT0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.DOWN and not HasFlag(doors, DoorSlot.UP0) then
-                return false
+            if room.GridIndex == adyacentIndexes.DOWN then
+                if HasFlag(doors, 1 << DoorSlot.UP0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.DOWN_LEFT and not HasFlag(doors, DoorSlot.UP1) then
-                return false
+            if room.GridIndex == adyacentIndexes.DOWN_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.UP1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.D_LEFT and not HasFlag(doors, DoorSlot.RIGHT0) then
-                return false
+            if room.GridIndex == adyacentIndexes.D_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.RIGHT0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.D_LEFT_UP and not HasFlag(doors, DoorSlot.RIGHT1) then
-                return false
+            if room.GridIndex == adyacentIndexes.UP_D_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.RIGHT1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.D_UP_LEFT and not HasFlag(doors, DoorSlot.DOWN1) then
-                return false
+            if room.GridIndex == adyacentIndexes.D_UP_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.DOWN1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
         end
 
         --LBR
         if roomData.Shape == RoomShape.ROOMSHAPE_LBR then
-            if room.GridIndex == adyacentIndexes.UP_RIGHT and not HasFlag(doors, DoorSlot.RIGHT1 | DoorSlot.DOWN1) then
-                return false
+            if room.GridIndex == adyacentIndexes.UP_RIGHT then
+                if HasFlag(doors, 1 << DoorSlot.RIGHT1 | 1 << DoorSlot.DOWN1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.D_UP and not HasFlag(doors, DoorSlot.DOWN0) then
-                return false
+            if room.GridIndex == adyacentIndexes.D_UP then
+                if HasFlag(doors, 1 << DoorSlot.DOWN0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.UP_RIGHT and not HasFlag(doors, DoorSlot.LEFT1) then
-                return false
+            if room.GridIndex == adyacentIndexes.UP_RIGHT then
+                if HasFlag(doors, 1 << DoorSlot.LEFT1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.RIGHT and not HasFlag(doors, DoorSlot.LEFT0) then
-                return false
+            if room.GridIndex == adyacentIndexes.RIGHT then
+                if HasFlag(doors, 1 << DoorSlot.LEFT0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.DOWN and not HasFlag(doors, DoorSlot.UP0) then
-                return false
+            if room.GridIndex == adyacentIndexes.DOWN then
+                if HasFlag(doors, 1 << DoorSlot.UP0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.DOWN_LEFT and not HasFlag(doors, DoorSlot.UP1) then
-                return false
+            if room.GridIndex == adyacentIndexes.DOWN_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.UP1) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
 
-            if room.GridIndex == adyacentIndexes.D_LEFT and not HasFlag(doors, DoorSlot.RIGHT0) then
-                return false
+            if room.GridIndex == adyacentIndexes.D_LEFT then
+                if HasFlag(doors, 1 << DoorSlot.RIGHT0) then
+                    isAccessbileFromAtLeastOne = true
+                else
+                    isNotAccessibleFromAtLeastOne = true
+                end
             end
         end
     end
 
-    return true
+    return isNotAccessibleFromAtLeastOne and isAccessbileFromAtLeastOne
 end
 
 
-local function GetPossibleEmptyRoomIndexes()
+local function PrintPossibleRooms(possbile)
+    local str = ""
+    for index, _ in pairs(possbile) do
+        str = str .. index .. ", "
+    end
+    return str
+end
+
+
+function GetPossibleEmptyRoomIndexes()
     local level = game:GetLevel()
     local rooms = level:GetRooms()
 
@@ -414,8 +681,53 @@ local function GetPossibleEmptyRoomIndexes()
 
         local occupyingRooms = GetRoomIndexesThatRoomOccupies(room)
 
-        for _, gridIndex in ipairs(occupyingRooms) do
+        for _, gridIndex in pairs(occupyingRooms) do
             possibleRooms[gridIndex] = nil
         end
     end
+
+    --Remove indexes that are completely accesible
+    for roomIndex, _ in pairs(possibleRooms) do
+        if not IsAccessibleIndexButCantBeRedRoom(roomIndex) then
+            possibleRooms[roomIndex] = nil
+        end
+    end
+
+    return possibleRooms
 end
+
+
+local RoomsToPutDoor = {}
+
+
+function BadGatewayMod:OnUpdate()
+    if game:GetFrameCount() == 1 then
+        local player = game:GetPlayer(0)
+        Isaac.ExecuteCommand("debug 10")
+        player:AddCollectible(CollectibleType.COLLECTIBLE_XRAY_VISION)
+        player:AddCollectible(CollectibleType.COLLECTIBLE_WOODEN_SPOON)
+        player:AddCollectible(CollectibleType.COLLECTIBLE_WOODEN_SPOON)
+        player:AddCollectible(CollectibleType.COLLECTIBLE_WOODEN_SPOON)
+        player:AddCollectible(CollectibleType.COLLECTIBLE_RED_KEY)
+
+        player:RemoveCostume(Isaac.GetItemConfig():GetCollectible(CollectibleType.COLLECTIBLE_XRAY_VISION))
+        player:RemoveCostume(Isaac.GetItemConfig():GetCollectible(CollectibleType.COLLECTIBLE_WOODEN_SPOON))
+    end
+
+    RoomsToPutDoor = GetPossibleEmptyRoomIndexes()
+end
+BadGatewayMod:AddCallback(ModCallbacks.MC_POST_UPDATE, BadGatewayMod.OnUpdate)
+
+
+function BadGatewayMod:OnRender()
+    if not MinimapAPI then return end
+
+    for _, room in ipairs(MinimapAPI:GetLevel()) do
+        local position = room.RenderOffset
+        Isaac.RenderScaledText(room.Descriptor.GridIndex, position.X + 10, position.Y + 10, 0.5, 0.5, 1, 1, 1, 1)
+        room.DisplayFlags = 1<<0 | 1<<1 | 1<<2
+    end
+
+    Isaac.RenderText(PrintPossibleRooms(RoomsToPutDoor), 100, 100, 1, 1, 1, 1)
+end
+BadGatewayMod:AddCallback(ModCallbacks.MC_POST_RENDER, BadGatewayMod.OnRender)
