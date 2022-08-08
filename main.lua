@@ -146,45 +146,6 @@ local function IsRoomAccessible(index)
 
     local adyacentIndexes = GetAdyacentIndexes(index)
 
-    -- --First check for small rooms
-    -- for i = 0, rooms.Size - 1, 1 do
-    --     local room = rooms:Get(i)
-    --     local roomData = room.Data
-
-    --     if room.GridIndex == adyacentIndexes.UP and
-    --     roomData.Shape == RoomShape.ROOMSHAPE_IH or roomData.Shape == RoomShape.ROOMSHAPE_IIH then
-    --         return false
-    --     end
-
-    --     if room.GridIndex == adyacentIndexes.DOWN and
-    --     roomData.Shape == RoomShape.ROOMSHAPE_IH or roomData.Shape == RoomShape.ROOMSHAPE_IIH then
-    --         return false
-    --     end
-
-    --     if room.GridIndex == adyacentIndexes.LEFT and
-    --     roomData.Shape == RoomShape.ROOMSHAPE_IV or roomData.Shape == RoomShape.ROOMSHAPE_IIV then
-    --         return false
-    --     end
-
-    --     if room.GridIndex == adyacentIndexes.RIGHT and
-    --     roomData.Shape == RoomShape.ROOMSHAPE_IV or roomData.Shape == RoomShape.ROOMSHAPE_IIV then
-    --         return false
-    --     end
-
-    --     if room.GridIndex == adyacentIndexes.UP_LEFT and
-    --     roomData.Shape == RoomShape.ROOMSHAPE_IIH or roomData.Shape == RoomShape.ROOMSHAPE_IIV then
-    --         return false
-    --     end
-
-    --     if room.GridIndex == adyacentIndexes.UP_RIGHT and roomData.Shape == RoomShape.ROOMSHAPE_IIV then
-    --         return false
-    --     end
-
-    --     if room.GridIndex == adyacentIndexes.DOWN_LEFT and roomData.Shape == RoomShape.ROOMSHAPE_IIH then
-    --         return false
-    --     end
-    -- end
-
     --Check for doors
     for i = 0, rooms.Size - 1, 1 do
         local room = rooms:Get(i)
@@ -243,7 +204,7 @@ local function IsRoomAccessible(index)
                 return false
             end
 
-            if room.GridIndex == adyacentIndexes.UP_LEFT and not HasFlag(doors, DoorSlot.DOWN0) then
+            if room.GridIndex == adyacentIndexes.UP_LEFT and not HasFlag(doors, DoorSlot.DOWN1) then
                 return false
             end
 
@@ -286,11 +247,15 @@ local function IsRoomAccessible(index)
                 return false
             end
 
+            if room.GridIndex == adyacentIndexes.UP_RIGHT and not HasFlag(doors, DoorSlot.LEFT1) then
+                return false
+            end
+
             if room.GridIndex == adyacentIndexes.DOWN and not HasFlag(doors, DoorSlot.UP0) then
                 return false
             end
 
-            if room.GridIndex == adyacentIndexes.DOWN_LEFT and not doors | DoorSlot.UP1 then
+            if room.GridIndex == adyacentIndexes.DOWN_LEFT and not HasFlag(doors, DoorSlot.UP1) then
                 return false
             end
         end
@@ -353,6 +318,68 @@ local function IsRoomAccessible(index)
             end
 
             if room.GridIndex == adyacentIndexes.D_UP_LEFT and not HasFlag(doors, DoorSlot.DOWN1) then
+                return false
+            end
+        end
+
+        --LBL rooms
+        if roomData.Shape == RoomShape.ROOMSHAPE_LBL then
+            if room.GridIndex == adyacentIndexes.UP and not HasFlag(doors, DoorSlot.DOWN0 | DoorSlot.LEFT1) then
+                return false
+            end
+
+            if room.GridIndex == adyacentIndexes.RIGHT and not HasFlag(doors, DoorSlot.LEFT0) then
+                return false
+            end
+
+            if room.GridIndex == adyacentIndexes.DOWN and not HasFlag(doors, DoorSlot.UP0) then
+                return false
+            end
+
+            if room.GridIndex == adyacentIndexes.DOWN_LEFT and not HasFlag(doors, DoorSlot.UP1) then
+                return false
+            end
+
+            if room.GridIndex == adyacentIndexes.D_LEFT and not HasFlag(doors, DoorSlot.RIGHT0) then
+                return false
+            end
+
+            if room.GridIndex == adyacentIndexes.D_LEFT_UP and not HasFlag(doors, DoorSlot.RIGHT1) then
+                return false
+            end
+
+            if room.GridIndex == adyacentIndexes.D_UP_LEFT and not HasFlag(doors, DoorSlot.DOWN1) then
+                return false
+            end
+        end
+
+        --LBR
+        if roomData.Shape == RoomShape.ROOMSHAPE_LBR then
+            if room.GridIndex == adyacentIndexes.UP_RIGHT and not HasFlag(doors, DoorSlot.RIGHT1 | DoorSlot.DOWN1) then
+                return false
+            end
+
+            if room.GridIndex == adyacentIndexes.D_UP and not HasFlag(doors, DoorSlot.DOWN0) then
+                return false
+            end
+
+            if room.GridIndex == adyacentIndexes.UP_RIGHT and not HasFlag(doors, DoorSlot.LEFT1) then
+                return false
+            end
+
+            if room.GridIndex == adyacentIndexes.RIGHT and not HasFlag(doors, DoorSlot.LEFT0) then
+                return false
+            end
+
+            if room.GridIndex == adyacentIndexes.DOWN and not HasFlag(doors, DoorSlot.UP0) then
+                return false
+            end
+
+            if room.GridIndex == adyacentIndexes.DOWN_LEFT and not HasFlag(doors, DoorSlot.UP1) then
+                return false
+            end
+
+            if room.GridIndex == adyacentIndexes.D_LEFT and not HasFlag(doors, DoorSlot.RIGHT0) then
                 return false
             end
         end
