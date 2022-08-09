@@ -1,0 +1,5 @@
+<sounds root="sfx/">
+    <sound name="502 appear">
+        <sample weight="1" path="502appear.wav"/>
+    </sound>
+</sounds>
