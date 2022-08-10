@@ -45,8 +45,8 @@ Constants.DOOR_SLOT_GRID_INDEXES = {
     [RoomShape.ROOMSHAPE_1x2] = doorSlotsGridIndexes1x2,
     [RoomShape.ROOMSHAPE_IIV] = doorSlotsGridIndexes1x2,
 
-    [RoomShape.ROOMSHAPE_1x2] = doorSlotsGridIndexes2x1,
-    [RoomShape.ROOMSHAPE_IIV] = doorSlotsGridIndexes2x1,
+    [RoomShape.ROOMSHAPE_2x1] = doorSlotsGridIndexes2x1,
+    [RoomShape.ROOMSHAPE_IIH] = doorSlotsGridIndexes2x1,
 
     [RoomShape.ROOMSHAPE_2x2] = {
         [DoorSlot.LEFT0] = 112,

@@ -8,11 +8,11 @@ local function loadFile(loc, ...)
     local path = "mods/" .. modName .. "/"
     return assert(loadfile(path .. loc .. ".lua"))(...)
 end
-local RoomFinder = loadFile("bad_gateway_scripts/RoomFinder")
+RoomFinder = loadFile("bad_gateway_scripts/RoomFinder")
 local Constants = loadFile("bad_gateway_scripts/Constants")
 local Helpers = loadFile("bad_gateway_scripts/Helpers")
 
-local chosenRoomAndDoorSlotPerFloor = {}
+DoorManager.chosenRoomAndDoorSlotPerFloor = {}
 local couldSpawnGlitchDoorBefore = false
 
 local IsGoingToErrorRoom = false
@@ -62,7 +62,7 @@ function DoorManager.GetRoomAndDoorSlotForGlitchDoor()
 
     --If there are no possible rooms for our door to appear, return nil
     if #possibleEmptyRooms == 0 then
-        table.insert(chosenRoomAndDoorSlotPerFloor, {stage = level:GetStage(), room = nil, doorSlot = nil, hasSpawnedReward = false})
+        table.insert(DoorManager.chosenRoomAndDoorSlotPerFloor, {stage = level:GetStage(), room = nil, doorSlot = nil, hasSpawnedReward = false})
         return
     end
 
@@ -77,7 +77,7 @@ function DoorManager.GetRoomAndDoorSlotForGlitchDoor()
 
     local chosenRoomAndDoorSlot = roomsAndDoorSlots[itemRNG:RandomInt(#roomsAndDoorSlots) + 1]
 
-    table.insert(chosenRoomAndDoorSlotPerFloor, {stage = level:GetStage(), room = chosenRoomAndDoorSlot.index, doorSlot = chosenRoomAndDoorSlot.doorSlot, hasSpawnedReward = false})
+    table.insert(DoorManager.chosenRoomAndDoorSlotPerFloor, {stage = level:GetStage(), room = chosenRoomAndDoorSlot.index, doorSlot = chosenRoomAndDoorSlot.doorSlot, hasSpawnedReward = false})
 end
 
 
@@ -86,7 +86,7 @@ end
 function DoorManager.GetRoomAndDoorSlotForCurrentLevel()
     local level = game:GetLevel()
 
-    for _, chosenRoomAndDoor in ipairs(chosenRoomAndDoorSlotPerFloor) do
+    for _, chosenRoomAndDoor in ipairs(DoorManager.chosenRoomAndDoorSlotPerFloor) do
         if level:GetStage() == chosenRoomAndDoor.stage then
             return chosenRoomAndDoor
         end
@@ -123,16 +123,16 @@ function DoorManager.SpawnGlitchDoor(doorSlot)
     glitchDoor.DepthOffset = -50
 
     if doorSlot == DoorSlot.LEFT0 or doorSlot == DoorSlot.LEFT1 then
-        glitchDoor.Position = Vector(glitchDoor.Position.X - 4, glitchDoor.Position.Y)
+        glitchDoor.Position = Vector(glitchDoor.Position.X - 5, glitchDoor.Position.Y)
         glitchDoor.SpriteRotation = -90
     elseif doorSlot == DoorSlot.RIGHT0 or doorSlot == DoorSlot.RIGHT1 then
-        glitchDoor.Position = Vector(glitchDoor.Position.X + 4, glitchDoor.Position.Y)
+        glitchDoor.Position = Vector(glitchDoor.Position.X + 5, glitchDoor.Position.Y)
         glitchDoor.SpriteRotation = 90
     elseif doorSlot == DoorSlot.DOWN0 or doorSlot == DoorSlot.DOWN1 then
-        glitchDoor.Position = Vector(glitchDoor.Position.X, glitchDoor.Position.Y + 4)
+        glitchDoor.Position = Vector(glitchDoor.Position.X, glitchDoor.Position.Y + 5)
         glitchDoor.SpriteRotation = 180
     elseif doorSlot == DoorSlot.UP0 or doorSlot == DoorSlot.UP1 then
-        glitchDoor.Position = Vector(glitchDoor.Position.X, glitchDoor.Position.Y - 4)
+        glitchDoor.Position = Vector(glitchDoor.Position.X, glitchDoor.Position.Y - 5)
     end
 end
 
@@ -145,7 +145,7 @@ function DoorManager.CheckIfGltichDoorShouldExist()
     if not chosenRoomAndDoorSlot or not chosenRoomAndDoorSlot.room then return end
 
     local level = game:GetLevel()
-    local currentRoomIndex = level:GetCurrentRoomIndex()
+    local currentRoomIndex = level:GetCurrentRoomDesc().GridIndex
 
     if currentRoomIndex == chosenRoomAndDoorSlot.room and
     #Isaac.FindByType(EntityType.ENTITY_EFFECT, Constants.GLITCH_DOOR_VARIANT) == 0 then
@@ -236,7 +236,7 @@ function DoorManager:OnFrameUpdate()
                 local player = game:GetPlayer(i)
 
                 if player:HasCollectible(Constants.BAD_GATEWAY_ITEM) then
-                    player:PlayExtraAnimation("Glitch")
+                    player:QueueExtraAnimation("Glitch")
                 end
             end
         end
@@ -254,7 +254,7 @@ end
 
 
 function DoorManager:OnGameStart()
-    chosenRoomAndDoorSlotPerFloor = {}
+    DoorManager.chosenRoomAndDoorSlotPerFloor = {}
     IsGoingToErrorRoom = false
 end
 
@@ -262,6 +262,12 @@ end
 function DoorManager:OnGlitchDoorUpdate(glitchDoor)
     --We dont need to check for collision if we already collided
     if IsGoingToErrorRoom then return end
+
+    --If the glitch door cannot be spawned anymore, remove the door
+    if not DoorManager.CanSpawnGlitchDoor() then
+        glitchDoor:Remove()
+        return
+    end
 
     local playerWhoCollided = nil
 
