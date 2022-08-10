@@ -15,6 +15,7 @@ local chosenRoomAndDoorSlotPerFloor = {}
 local couldSpawnGlitchDoorBefore = false
 
 local IsGoingToErrorRoom = false
+local AreInErrorRoom = false
 
 
 ---Returns true if all boss rooms are clear
@@ -55,7 +56,14 @@ end
 
 ---Adds the room index and door slot tuple chosen for this floor
 function DoorManager.GetRoomAndDoorSlotForGlitchDoor()
+    local level = game:GetLevel()
     local possibleEmptyRooms = RoomFinder.GetPossibleEmptyRoomIndexes()
+
+    --If there are no possible rooms for our door to appear, return nil
+    if #possibleEmptyRooms == 0 then
+        table.insert(chosenRoomAndDoorSlotPerFloor, {stage = level:GetStage(), room = nil, doorSlot = nil})
+        return
+    end
 
     --We use the rng of the first player to be always consistent
     local itemRNGSeed = game:GetPlayer(0):GetCollectibleRNG(Constants.BAD_GATEWAY_ITEM):GetSeed()
@@ -68,7 +76,6 @@ function DoorManager.GetRoomAndDoorSlotForGlitchDoor()
 
     local chosenRoomAndDoorSlot = roomsAndDoorSlots[itemRNG:RandomInt(#roomsAndDoorSlots) + 1]
 
-    local level = game:GetLevel()
     table.insert(chosenRoomAndDoorSlotPerFloor, {stage = level:GetStage(), room = chosenRoomAndDoorSlot.index, doorSlot = chosenRoomAndDoorSlot.doorSlot})
 end
 
@@ -115,16 +122,16 @@ function DoorManager.SpawnGlitchDoor(doorSlot)
     glitchDoor.DepthOffset = -50
 
     if doorSlot == DoorSlot.LEFT0 or doorSlot == DoorSlot.LEFT1 then
-        glitchDoor.Position = Vector(glitchDoor.Position.X - 3, glitchDoor.Position.Y)
+        glitchDoor.Position = Vector(glitchDoor.Position.X - 4, glitchDoor.Position.Y)
         glitchDoor.SpriteRotation = -90
     elseif doorSlot == DoorSlot.RIGHT0 or doorSlot == DoorSlot.RIGHT1 then
-        glitchDoor.Position = Vector(glitchDoor.Position.X + 3, glitchDoor.Position.Y)
+        glitchDoor.Position = Vector(glitchDoor.Position.X + 4, glitchDoor.Position.Y)
         glitchDoor.SpriteRotation = 90
     elseif doorSlot == DoorSlot.DOWN0 or doorSlot == DoorSlot.DOWN1 then
-        glitchDoor.Position = Vector(glitchDoor.Position.X, glitchDoor.Position.Y + 3)
+        glitchDoor.Position = Vector(glitchDoor.Position.X, glitchDoor.Position.Y + 4)
         glitchDoor.SpriteRotation = 180
     elseif doorSlot == DoorSlot.UP0 or doorSlot == DoorSlot.UP1 then
-        glitchDoor.Position = Vector(glitchDoor.Position.X, glitchDoor.Position.Y - 3)
+        glitchDoor.Position = Vector(glitchDoor.Position.X, glitchDoor.Position.Y - 4)
     end
 end
 
@@ -161,6 +168,24 @@ function DoorManager.StartTransitionToErrorRoom()
 
         player.Velocity = Vector.Zero
         player.ControlsEnabled = false
+    end
+end
+
+
+---Makes everything back to normal when arriving at the error room
+function DoorManager.ArriveAtErrorRoom()
+    AreInErrorRoom = false
+
+    for i = 0, game:GetNumPlayers() - 1, 1 do
+        local player = game:GetPlayer(i)
+
+        --Only the player who touched the door plays the animation
+        if player:GetData().IsPlayerWhoTouchedTheDoor then
+            player:QueueExtraAnimation("Glitch")
+            player:GetData().IsPlayerWhoTouchedTheDoor = nil
+        end
+
+        player.ControlsEnabled = true
     end
 end
 
@@ -238,6 +263,7 @@ function DoorManager:OnPlayerUpdate(player)
 
     if player:IsExtraAnimationFinished() then
         IsGoingToErrorRoom = false
+        AreInErrorRoom = true
 
         --We need to set level.LeaveDoor to -1 for game:ChangeRoom() to work properly
         local level = game:GetLevel()
@@ -250,14 +276,14 @@ end
 
 
 function DoorManager:OnNewRoom()
-    for i = 0, game:GetNumPlayers() - 1, 1 do
-        local player = game:GetPlayer(i)
+    local canSpawnGlitchDoorNow = DoorManager.CanSpawnGlitchDoor()
 
-        --Only the player who touched the door plays the animation
-        if player:GetData().IsPlayerWhoTouchedTheDoor then
-            player:PlayExtraAnimation("Glitch")
-            player:GetData().IsPlayerWhoTouchedTheDoor = nil
-        end
+    if canSpawnGlitchDoorNow then
+        DoorManager.CheckIfGltichDoorShouldExist()
+    end
+
+    if AreInErrorRoom then
+        DoorManager.ArriveAtErrorRoom()
     end
 end
 
@@ -267,6 +293,7 @@ function DoorManager.AddCallbacks(mod)
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, DoorManager.OnGameStart)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, DoorManager.OnGlitchDoorUpdate, Constants.GLITCH_DOOR_VARIANT)
     mod:AddCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, DoorManager.OnPlayerUpdate)
+    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, DoorManager.OnNewRoom)
 end
 
 

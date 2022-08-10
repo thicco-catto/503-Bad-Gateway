@@ -99,4 +99,7 @@ Constants.DOOR_SLOT_GRID_INDEXES = {
     }
 }
 
+--For minimapi
+Constants.GLITCH_DOOR_ICON_ID = "GlitchDoorMinimapIcon"
+
 return Constants

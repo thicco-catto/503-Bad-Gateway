@@ -457,17 +457,13 @@ function RoomFinder.IsRoomAccesibleFromIndex(room, index)
 
             if room.GridIndex == adjacentIndexes.D_UP_LEFT then
                 if Helpers.HasFlag(doors, 1 << DoorSlot.DOWN1) then
-                    isAccessbileFromAtLeastOne = true
-                else
-                    isNotAccessibleFromAtLeastOne = true
+                    return true
                 end
             end
         else
             if room.GridIndex == adjacentIndexes.UP_RIGHT then
                 if Helpers.HasFlag(doors, 1 << DoorSlot.RIGHT1 | 1 << DoorSlot.DOWN1) then
-                    isAccessbileFromAtLeastOne = true
-                else
-                    isNotAccessibleFromAtLeastOne = true
+                    return true
                 end
             end
         end

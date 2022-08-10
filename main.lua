@@ -11,27 +11,36 @@ end
 local DoorManager = loadFile("bad_gateway_scripts/DoorManager")
 DoorManager.AddCallbacks(BadGatewayMod)
 
+loadFile("bad_gateway_scripts/compatibility/EIDCompat")
 
--- local RoomFinder = loadFile("bad_gateway_scripts/RoomFinder")
+local MinimapiCompat = loadFile("bad_gateway_scripts/compatibility/MinimAPICompat")
 
--- function BadGatewayMod:OnRender()
---     if not MinimapAPI then return end
+if MinimapiCompat then
+    MinimapiCompat:AddCallbacks(BadGatewayMod)
+    MinimapiCompat.AddDoorManager(DoorManager)
+end
 
---     for _, room in ipairs(MinimapAPI:GetLevel()) do
---         local position = room.RenderOffset
---         Isaac.RenderScaledText(room.Descriptor.GridIndex, position.X + 10, position.Y + 10, 0.5, 0.5, 1, 1, 1, 1)
---         room.DisplayFlags = 1 << 0 | 1 << 1 | 1 << 2
---     end
 
---     local rooms = RoomFinder.GetPossibleEmptyRoomIndexes()
+local RoomFinder = loadFile("bad_gateway_scripts/RoomFinder")
 
---     local str = ""
+function BadGatewayMod:OnRender()
+    if not MinimapAPI then return end
 
---     for _, value in ipairs(rooms) do
---         str = str .. value .. ", "
---     end
+    for _, room in ipairs(MinimapAPI:GetLevel()) do
+        local position = room.RenderOffset
+        Isaac.RenderScaledText(room.Descriptor.GridIndex, position.X + 10, position.Y + 10, 0.5, 0.5, 1, 1, 1, 1)
+        room.DisplayFlags = 1 << 0 | 1 << 1 | 1 << 2
+    end
 
---     Isaac.RenderText(str, 100, 100, 1, 1, 1, 1)
--- end
+    local rooms = RoomFinder.GetPossibleEmptyRoomIndexes()
 
--- BadGatewayMod:AddCallback(ModCallbacks.MC_POST_RENDER, BadGatewayMod.OnRender)
+    local str = ""
+
+    for _, value in ipairs(rooms) do
+        str = str .. value .. ", "
+    end
+
+    Isaac.RenderText(str, 100, 100, 1, 1, 1, 1)
+end
+
+BadGatewayMod:AddCallback(ModCallbacks.MC_POST_RENDER, BadGatewayMod.OnRender)
