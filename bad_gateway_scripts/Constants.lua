@@ -3,6 +3,11 @@ local Constants = {}
 Constants.BAD_GATEWAY_ITEM = Isaac.GetItemIdByName("502")
 Constants.GATEWAY_APPEAR_SFX = Isaac.GetSoundIdByName("502 appear")
 
+Constants.BAD_GATEWAY_TRINKETS = {
+    TrinketType.TRINKET_ERROR,
+    TrinketType.TRINKET_M
+}
+
 Constants.GLITCH_DOOR_VARIANT = Isaac.GetEntityVariantByName("glitch door")
 
 Constants.DISTANCE_TO_GLITCH_DOOR = 38

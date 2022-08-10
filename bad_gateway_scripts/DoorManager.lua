@@ -1,3 +1,4 @@
+---@diagnostic disable: need-check-nil
 local DoorManager = {}
 local game = Game()
 
@@ -61,7 +62,7 @@ function DoorManager.GetRoomAndDoorSlotForGlitchDoor()
 
     --If there are no possible rooms for our door to appear, return nil
     if #possibleEmptyRooms == 0 then
-        table.insert(chosenRoomAndDoorSlotPerFloor, {stage = level:GetStage(), room = nil, doorSlot = nil})
+        table.insert(chosenRoomAndDoorSlotPerFloor, {stage = level:GetStage(), room = nil, doorSlot = nil, hasSpawnedReward = false})
         return
     end
 
@@ -76,7 +77,7 @@ function DoorManager.GetRoomAndDoorSlotForGlitchDoor()
 
     local chosenRoomAndDoorSlot = roomsAndDoorSlots[itemRNG:RandomInt(#roomsAndDoorSlots) + 1]
 
-    table.insert(chosenRoomAndDoorSlotPerFloor, {stage = level:GetStage(), room = chosenRoomAndDoorSlot.index, doorSlot = chosenRoomAndDoorSlot.doorSlot})
+    table.insert(chosenRoomAndDoorSlotPerFloor, {stage = level:GetStage(), room = chosenRoomAndDoorSlot.index, doorSlot = chosenRoomAndDoorSlot.doorSlot, hasSpawnedReward = false})
 end
 
 
@@ -141,7 +142,7 @@ function DoorManager.CheckIfGltichDoorShouldExist()
     local chosenRoomAndDoorSlot = DoorManager.GetRoomAndDoorSlotForCurrentLevel()
 
     --If it doesnt exist just return early
-    if not chosenRoomAndDoorSlot then return end
+    if not chosenRoomAndDoorSlot or not chosenRoomAndDoorSlot.room then return end
 
     local level = game:GetLevel()
     local currentRoomIndex = level:GetCurrentRoomIndex()
@@ -200,13 +201,43 @@ function DoorManager:OnFrameUpdate()
 
     --If we can spawn the glitch door now and we couldnt the frame before, play the sound and glitch animation
     if canSpawnGlitchDoorNow and not couldSpawnGlitchDoorBefore then
-        SFXManager():Play(Constants.GATEWAY_APPEAR_SFX)
+        local chosenRoomAndDoorSlot = DoorManager.GetRoomAndDoorSlotForCurrentLevel()
 
-        for i = 0, game:GetNumPlayers() - 1, 1 do
-            local player = game:GetPlayer(i)
+        if not chosenRoomAndDoorSlot.room and not chosenRoomAndDoorSlot.hasSpawnedReward then
+            --If theres not a room, and we havent yet, spawn a trinket
+            chosenRoomAndDoorSlot.hasSpawnedReward = true
 
-            if player:HasCollectible(Constants.BAD_GATEWAY_ITEM) then
-                player:PlayExtraAnimation("Glitch")
+            local room = game:GetRoom()
+
+            for i = 0, game:GetNumPlayers() - 1, 1 do
+                local player = game:GetPlayer(i)
+
+                if player:HasCollectible(Constants.BAD_GATEWAY_ITEM) then
+                    local itemRNGSeed = player:GetCollectibleRNG(Constants.BAD_GATEWAY_ITEM):GetSeed()
+                    local itemRNG = RNG()
+                    itemRNG:SetSeed(itemRNGSeed, 35) --35 is the recommended shift
+
+                    --We advance the rng once for each stage
+                    for _ = 1, chosenRoomAndDoorSlot.stage, 1 do
+                        itemRNG:Next()
+                    end
+
+                    local chosenTrinket = Constants.BAD_GATEWAY_TRINKETS[itemRNG:RandomInt(#Constants.BAD_GATEWAY_TRINKETS) + 1]
+                    local spawningPos = room:FindFreePickupSpawnPosition(player.Position, 1, true)
+
+                    Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TRINKET, chosenTrinket, spawningPos, Vector.Zero, nil)
+                end
+            end
+        elseif chosenRoomAndDoorSlot.room then
+            --If theres a room, play the sound and glitch animation
+            SFXManager():Play(Constants.GATEWAY_APPEAR_SFX)
+
+            for i = 0, game:GetNumPlayers() - 1, 1 do
+                local player = game:GetPlayer(i)
+
+                if player:HasCollectible(Constants.BAD_GATEWAY_ITEM) then
+                    player:PlayExtraAnimation("Glitch")
+                end
             end
         end
     end
