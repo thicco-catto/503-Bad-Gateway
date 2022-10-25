@@ -45,13 +45,15 @@ end
 function DoorManager.CanSpawnGlitchDoor()
     local level = game:GetLevel()
 
+    local dimension = Helpers.GetDimension(level)
+
     local isVoid = level:GetAbsoluteStage() == LevelStage.STAGE7
     local isHome = level:GetAbsoluteStage() == LevelStage.STAGE8
 
     local playersHave502 = Helpers.DoesAnyPlayerHaveItem(Constants.BAD_GATEWAY_ITEM)
 
-    return DoorManager.AreAllBossRoomsCleared() and playersHave502 and not
-    (isVoid or isHome or level:IsAscent() or level:IsPreAscent())
+    return not (isVoid or isHome or level:IsAscent() or level:IsPreAscent()) and
+    dimension == 0 and playersHave502 and DoorManager.AreAllBossRoomsCleared()
 end
 
 

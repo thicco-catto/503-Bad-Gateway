@@ -8,7 +8,7 @@ function Helpers.HasFlag(toCheck, flag)
 end
 
 
----Returns whether any player has an specified mask
+---Returns whether any player has an specified item
 ---@param item any
 ---@return boolean
 function Helpers.DoesAnyPlayerHaveItem(item)
@@ -21,5 +21,19 @@ function Helpers.DoesAnyPlayerHaveItem(item)
 
     return false
 end
+
+
+function Helpers.GetDimension(level)
+    local roomIndex = level:GetCurrentRoomIndex()
+
+    for i = 0, 2 do
+        if GetPtrHash(level:GetRoomByIdx(roomIndex, i)) == GetPtrHash(level:GetRoomByIdx(roomIndex, -1)) then
+            return i
+        end
+    end
+    
+    return nil
+end
+
 
 return Helpers
