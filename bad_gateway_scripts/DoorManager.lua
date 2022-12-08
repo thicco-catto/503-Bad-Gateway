@@ -2,15 +2,10 @@
 local DoorManager = {}
 local game = Game()
 
-local function loadFile(loc, ...)
-    local _, err = pcall(require, "")
-    local modName = err:match("/mods/(.*)/%.lua")
-    local path = "mods/" .. modName .. "/"
-    return assert(loadfile(path .. loc .. ".lua"))(...)
-end
-RoomFinder = loadFile("bad_gateway_scripts/RoomFinder")
-local Constants = loadFile("bad_gateway_scripts/Constants")
-local Helpers = loadFile("bad_gateway_scripts/Helpers")
+
+RoomFinder = require("bad_gateway_scripts/RoomFinder")
+local Constants = require("bad_gateway_scripts/Constants")
+local Helpers = require("bad_gateway_scripts/Helpers")
 
 DoorManager.chosenRoomAndDoorSlotPerFloor = {}
 local couldSpawnGlitchDoorBefore = false
@@ -309,7 +304,7 @@ function DoorManager:OnPlayerUpdate(player)
         level.LeaveDoor = -1
 
         --Going to room index -2 means going to the error room
-        game:ChangeRoom(-2, -1)
+        game:ChangeRoom(GridRooms.ROOM_ERROR_IDX, -1)
     end
 end
 

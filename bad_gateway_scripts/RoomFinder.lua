@@ -1,13 +1,8 @@
 local RoomFinder = {}
 local game = Game()
 
-local function loadFile(loc, ...)
-    local _, err = pcall(require, "")
-    local modName = err:match("/mods/(.*)/%.lua")
-    local path = "mods/" .. modName .. "/"
-    return assert(loadfile(path .. loc .. ".lua"))(...)
-end
-local Helpers = loadFile("bad_gateway_scripts/Helpers")
+
+local Helpers = require("bad_gateway_scripts/Helpers")
 
 ---Returns a table with adyacent indexes and indirectly adjacent indexes (distance of 2)
 ---Invalid indexes will be -1
